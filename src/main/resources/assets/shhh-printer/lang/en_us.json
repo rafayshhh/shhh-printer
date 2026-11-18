@@ -1,0 +1,13 @@
+{
+	"modmenu.nameTranslation.shhh-printer": "Shhh Printer",
+	"modmenu.descriptionTranslation.shhh-printer": "Automated block placement assistant for Shhh Builder schematics.",
+	"category.shhh-printer.main": "Shhh Printer",
+	"key.shhh-printer.toggle": "Toggle Auto-Printer",
+	"key.shhh-printer.config": "Open Printer Settings",
+	"message.shhh-printer.enabled": "Shhh Printer: Enabled",
+	"message.shhh-printer.disabled": "Shhh Printer: Disabled",
+	"message.shhh-printer.no_placement": "No build placed in Shhh Builder. Press V to place one.",
+	"message.shhh-printer.speed_set": "Printer speed set to %d blocks per tick",
+	"message.shhh-printer.mode_set": "Printer placement mode set to %s",
+	"title.shhh-printer.config": "Shhh Printer Settings"
+}

@@ -1,0 +1,17 @@
+# Gradle and Fabric modding ignore list
+.gradle/
+build/
+bin/
+out/
+.idea/
+.run/
+run/
+logs/
+.DS_Store
+*.iml
+*.class
+.project
+.classpath
+.settings/
+*.log
+*.zip

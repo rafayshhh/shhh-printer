@@ -1,0 +1,36 @@
+{
+	"schemaVersion": 1,
+	"id": "shhh-printer",
+	"version": "${version}",
+	"name": "Shhh Printer",
+	"description": "An automated schematic block placement companion mod for Shhh Builder.",
+	"authors": [
+		"RafayShhh"
+	],
+	"contact": {
+		"homepage": "https://github.com/RafayShhh/shhh-printer",
+		"sources": "https://github.com/RafayShhh/shhh-printer",
+		"issues": "https://github.com/RafayShhh/shhh-printer/issues"
+	},
+	"license": "MIT",
+	"icon": "assets/shhh-printer/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"io.github.rafayshhh.shhhprinter.client.ShhhPrinterClient"
+		],
+		"modmenu": [
+			"io.github.rafayshhh.shhhprinter.client.integration.ModMenuIntegration"
+		]
+	},
+	"depends": {
+		"shhh-builder": ">=1.0.0",
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"modmenu": "*"
+	}
+}
