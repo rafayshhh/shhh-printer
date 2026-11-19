@@ -19,15 +19,23 @@ import java.nio.file.StandardCopyOption;
  * Persists settings to config/shhh-printer.json using atomic file operations.
  */
 public class ShhhPrinterConfig {
+	public enum TargetMode {
+		/** Point & Place: Only place the specific schematic block under player's crosshair. */
+		CROSSHAIR,
+		/** Area 360: Automatically place all missing blocks in reach sphere (Singleplayer / Cheats). */
+		ALL_IN_REACH
+	}
+
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final ShhhPrinterConfig INSTANCE = new ShhhPrinterConfig();
 
 	private boolean enabled = false;
+	private TargetMode targetMode = TargetMode.CROSSHAIR; // Crosshair Point & Place is fair play default
 	private int blocksPerTick = 1; // 1 to 5
-	private int placementDelayTicks = 0; // 0 to 10
+	private int placementDelayTicks = 2; // 0 to 10 (2 ticks = 10 blocks/sec legit cadence)
 	private double reachDistance = 4.5; // 2.0 to 6.0
-	private boolean strictAdjacent = false; // Requires adjacent solid block face
-	private boolean airPlacement = true; // Places directly in air on lenient servers and mid-air builds
+	private boolean strictAdjacent = true; // Safe vanilla-compliant support block requirement
+	private boolean airPlacement = false; // Air placement disabled by default
 	private boolean autoSwitchHotbar = true; // Automatically selects required item in hotbar
 	private boolean inventorySwap = true; // Swaps from inventory to hotbar if not in hotbar
 	private boolean autoOrientFacing = true; // Computes precise vectors for slabs, stairs, directional blocks
@@ -41,25 +49,31 @@ public class ShhhPrinterConfig {
 
 	public void applyPreset(String presetName) {
 		switch (presetName.toLowerCase(Locale.ROOT)) {
-			case "creative" -> {
-				this.blocksPerTick = 5;
+			case "creative", "fast" -> {
+				this.targetMode = TargetMode.CROSSHAIR;
+				this.blocksPerTick = 3;
+				this.placementDelayTicks = 0;
 				this.airPlacement = true;
 				this.strictAdjacent = false;
 				this.autoSwitchHotbar = true;
 				this.inventorySwap = true;
 			}
-			case "survival" -> {
+			case "survival", "legit" -> {
+				this.targetMode = TargetMode.CROSSHAIR;
 				this.blocksPerTick = 1;
+				this.placementDelayTicks = 2;
 				this.airPlacement = false;
 				this.strictAdjacent = true;
 				this.autoSwitchHotbar = true;
 				this.inventorySwap = true;
 			}
-			case "public" -> {
+			case "public", "safe" -> {
+				this.targetMode = TargetMode.CROSSHAIR;
 				this.blocksPerTick = 1;
+				this.placementDelayTicks = 4;
 				this.airPlacement = false;
 				this.strictAdjacent = true;
-				this.autoSwitchHotbar = false;
+				this.autoSwitchHotbar = true;
 				this.inventorySwap = false;
 			}
 		}
@@ -67,7 +81,13 @@ public class ShhhPrinterConfig {
 	}
 
 	public Path getConfigPath() {
-		return FabricLoader.getInstance().getConfigDir().resolve("shhh-printer.json");
+		try {
+			if (FabricLoader.getInstance() != null && FabricLoader.getInstance().getConfigDir() != null) {
+				return FabricLoader.getInstance().getConfigDir().resolve("shhh-printer.json");
+			}
+		} catch (Throwable ignored) {
+		}
+		return Path.of("config", "shhh-printer.json");
 	}
 
 	public synchronized void load() {
@@ -81,6 +101,13 @@ public class ShhhPrinterConfig {
 			JsonObject obj = JsonParser.parseReader(reader).getAsJsonObject();
 
 			if (obj.has("enabled")) enabled = obj.get("enabled").getAsBoolean();
+			if (obj.has("targetMode")) {
+				try {
+					targetMode = TargetMode.valueOf(obj.get("targetMode").getAsString().toUpperCase(Locale.ROOT));
+				} catch (Exception ignored) {
+					targetMode = TargetMode.CROSSHAIR;
+				}
+			}
 			if (obj.has("blocksPerTick")) blocksPerTick = clamp(obj.get("blocksPerTick").getAsInt(), 1, 5);
 			if (obj.has("placementDelayTicks")) placementDelayTicks = clamp(obj.get("placementDelayTicks").getAsInt(), 0, 10);
 			if (obj.has("reachDistance")) reachDistance = clamp(obj.get("reachDistance").getAsDouble(), 2.0, 6.0);
@@ -104,6 +131,7 @@ public class ShhhPrinterConfig {
 
 		JsonObject obj = new JsonObject();
 		obj.addProperty("enabled", enabled);
+		obj.addProperty("targetMode", targetMode.name());
 		obj.addProperty("blocksPerTick", blocksPerTick);
 		obj.addProperty("placementDelayTicks", placementDelayTicks);
 		obj.addProperty("reachDistance", reachDistance);
@@ -143,6 +171,9 @@ public class ShhhPrinterConfig {
 	public boolean isEnabled() { return enabled; }
 	public void setEnabled(boolean enabled) { this.enabled = enabled; }
 	public boolean toggleEnabled() { this.enabled = !this.enabled; return this.enabled; }
+
+	public TargetMode getTargetMode() { return targetMode != null ? targetMode : TargetMode.CROSSHAIR; }
+	public void setTargetMode(TargetMode targetMode) { this.targetMode = (targetMode != null) ? targetMode : TargetMode.CROSSHAIR; }
 
 	public int getBlocksPerTick() { return blocksPerTick; }
 	public void setBlocksPerTick(int blocksPerTick) { this.blocksPerTick = clamp(blocksPerTick, 1, 5); }

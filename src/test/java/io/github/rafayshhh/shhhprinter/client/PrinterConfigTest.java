@@ -10,14 +10,17 @@ public class PrinterConfigTest {
 	@Test
 	void testClampingAndDefaults() {
 		ShhhPrinterConfig config = ShhhPrinterConfig.getInstance();
+		config.applyPreset("survival");
+		config.setEnabled(false);
 
-		// Default values
+		// Safe Fair-Play Default values
 		assertFalse(config.isEnabled());
+		assertEquals(ShhhPrinterConfig.TargetMode.CROSSHAIR, config.getTargetMode());
 		assertEquals(1, config.getBlocksPerTick());
-		assertEquals(0, config.getPlacementDelayTicks());
+		assertEquals(2, config.getPlacementDelayTicks());
 		assertEquals(4.5, config.getReachDistance(), 0.001);
-		assertFalse(config.isStrictAdjacent());
-		assertTrue(config.isAirPlacement());
+		assertTrue(config.isStrictAdjacent());
+		assertFalse(config.isAirPlacement());
 		assertTrue(config.isAutoSwitchHotbar());
 		assertTrue(config.isInventorySwap());
 
@@ -41,9 +44,7 @@ public class PrinterConfigTest {
 		assertEquals(2.0, config.getReachDistance(), 0.001);
 
 		// Reset to default
-		config.setBlocksPerTick(1);
-		config.setPlacementDelayTicks(0);
-		config.setReachDistance(4.5);
+		config.applyPreset("survival");
 	}
 
 	@Test
@@ -58,5 +59,40 @@ public class PrinterConfigTest {
 		boolean t2 = config.toggleEnabled();
 		assertFalse(t2);
 		assertFalse(config.isEnabled());
+	}
+
+	@Test
+	void testPresets() {
+		ShhhPrinterConfig config = ShhhPrinterConfig.getInstance();
+
+		// Survival Preset
+		config.applyPreset("survival");
+		assertEquals(ShhhPrinterConfig.TargetMode.CROSSHAIR, config.getTargetMode());
+		assertEquals(1, config.getBlocksPerTick());
+		assertEquals(2, config.getPlacementDelayTicks());
+		assertFalse(config.isAirPlacement());
+		assertTrue(config.isStrictAdjacent());
+		assertTrue(config.isAutoSwitchHotbar());
+		assertTrue(config.isInventorySwap());
+
+		// Public Server Preset (Safe)
+		config.applyPreset("public");
+		assertEquals(ShhhPrinterConfig.TargetMode.CROSSHAIR, config.getTargetMode());
+		assertEquals(1, config.getBlocksPerTick());
+		assertEquals(4, config.getPlacementDelayTicks());
+		assertFalse(config.isAirPlacement());
+		assertTrue(config.isStrictAdjacent());
+		assertTrue(config.isAutoSwitchHotbar());
+		assertFalse(config.isInventorySwap());
+
+		// Creative Preset (Fast)
+		config.applyPreset("creative");
+		assertEquals(ShhhPrinterConfig.TargetMode.CROSSHAIR, config.getTargetMode());
+		assertEquals(3, config.getBlocksPerTick());
+		assertEquals(0, config.getPlacementDelayTicks());
+		assertTrue(config.isAirPlacement());
+		assertFalse(config.isStrictAdjacent());
+		assertTrue(config.isAutoSwitchHotbar());
+		assertTrue(config.isInventorySwap());
 	}
 }

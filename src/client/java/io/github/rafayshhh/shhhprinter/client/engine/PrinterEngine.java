@@ -3,6 +3,7 @@ package io.github.rafayshhh.shhhprinter.client.engine;
 import io.github.rafayshhh.shhhbuilder.client.LayerMode;
 import io.github.rafayshhh.shhhbuilder.client.PlacementManager;
 import io.github.rafayshhh.shhhbuilder.client.SchematicManager;
+import io.github.rafayshhh.shhhbuilder.client.hud.GhostBlockRaycastHelper;
 import io.github.rafayshhh.shhhbuilder.client.material.MaterialCountingEngine;
 import io.github.rafayshhh.shhhbuilder.client.schematic.LitematicData;
 import io.github.rafayshhh.shhhbuilder.client.schematic.WorldBlockValidator;
@@ -31,6 +32,7 @@ import net.minecraft.world.level.block.state.properties.Half;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.*;
@@ -117,61 +119,138 @@ public class PrinterEngine {
 
 		List<Candidate> candidates = new ArrayList<>();
 
-		for (PlacementManager.TransformedBlock tb : transformedBlocks) {
-			if (tb == null || tb.state() == null || tb.state().isAir()) {
-				continue;
+		if (config.getTargetMode() == ShhhPrinterConfig.TargetMode.CROSSHAIR) {
+			// Crosshair Point & Place: only place the block the player is actively pointing at
+			// 1. Raycast ghost block directly under the crosshair
+			GhostBlockRaycastHelper.GhostHit ghostHit = GhostBlockRaycastHelper.raycast(mc);
+			if (ghostHit != null && ghostHit.block() != null && ghostHit.block().state() != null) {
+				BlockPos worldPos = ghostHit.worldPos();
+				PlacementManager.TransformedBlock tb = ghostHit.block();
+
+				boolean layerAllowed = true;
+				if (layerMode == LayerMode.SINGLE && tb.relY() != (currentLayer - 1)) {
+					layerAllowed = false;
+				} else if (layerMode == LayerMode.UP_TO && tb.relY() >= currentLayer) {
+					layerAllowed = false;
+				}
+
+				if (layerAllowed && !tb.state().isAir()) {
+					double distSq = eyePos.distanceToSqr(Vec3.atCenterOf(worldPos));
+					if (distSq <= reachSq) {
+						Long lastPlaced = PLACED_CONFIRMATION_CACHE.get(worldPos.asLong());
+						if (lastPlaced == null || (now - lastPlaced) >= CONFIRMATION_COOLDOWN_MS) {
+							BlockState worldState = mc.level.getBlockState(worldPos);
+							WorldBlockValidator.MatchStatus match = WorldBlockValidator.check(worldState, tb.state());
+							if (match == WorldBlockValidator.MatchStatus.MISSING) {
+								AABB blockBox = new AABB(worldPos);
+								if (!playerBox.intersects(blockBox)) {
+									candidates.add(new Candidate(worldPos, tb, distSq));
+								}
+							}
+						}
+					}
+				}
 			}
 
-			// Respect UP_TO layer filter
-			if (layerMode == LayerMode.UP_TO && tb.relY() >= currentLayer) {
-				continue;
+			// 2. If no ghost block directly intersected, check if crosshair is aimed at a physical world block face
+			if (candidates.isEmpty() && mc.hitResult instanceof BlockHitResult bhr && bhr.getType() == HitResult.Type.BLOCK) {
+				BlockPos targetPos = bhr.getBlockPos().relative(bhr.getDirection());
+				int relX = targetPos.getX() - origin.getX();
+				int relY = targetPos.getY() - origin.getY();
+				int relZ = targetPos.getZ() - origin.getZ();
+
+				PlacementManager.TransformedBlock tb = PlacementManager.getBlockAt(relX, relY, relZ);
+				if (tb != null && tb.state() != null && !tb.state().isAir()) {
+					boolean layerAllowed = true;
+					if (layerMode == LayerMode.SINGLE && tb.relY() != (currentLayer - 1)) {
+						layerAllowed = false;
+					} else if (layerMode == LayerMode.UP_TO && tb.relY() >= currentLayer) {
+						layerAllowed = false;
+					}
+
+					if (layerAllowed) {
+						double distSq = eyePos.distanceToSqr(Vec3.atCenterOf(targetPos));
+						if (distSq <= reachSq) {
+							Long lastPlaced = PLACED_CONFIRMATION_CACHE.get(targetPos.asLong());
+							if (lastPlaced == null || (now - lastPlaced) >= CONFIRMATION_COOLDOWN_MS) {
+								BlockState worldState = mc.level.getBlockState(targetPos);
+								WorldBlockValidator.MatchStatus match = WorldBlockValidator.check(worldState, tb.state());
+								if (match == WorldBlockValidator.MatchStatus.MISSING) {
+									AABB blockBox = new AABB(targetPos);
+									if (!playerBox.intersects(blockBox)) {
+										candidates.add(new Candidate(targetPos, tb, distSq));
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 
-			BlockPos worldPos = origin.offset(tb.relX(), tb.relY(), tb.relZ());
-			double distSq = eyePos.distanceToSqr(Vec3.atCenterOf(worldPos));
-			if (distSq > reachSq) {
-				continue;
+			reachableMissingCount = candidates.size();
+			if (candidates.isEmpty()) {
+				lastStatusMessage = "Point at a ghost block";
+				currentMissingItem = null;
+				return;
+			}
+		} else {
+			// ALL_IN_REACH: Area 360 mode
+			for (PlacementManager.TransformedBlock tb : transformedBlocks) {
+				if (tb == null || tb.state() == null || tb.state().isAir()) {
+					continue;
+				}
+
+				// Respect UP_TO layer filter
+				if (layerMode == LayerMode.UP_TO && tb.relY() >= currentLayer) {
+					continue;
+				}
+
+				BlockPos worldPos = origin.offset(tb.relX(), tb.relY(), tb.relZ());
+				double distSq = eyePos.distanceToSqr(Vec3.atCenterOf(worldPos));
+				if (distSq > reachSq) {
+					continue;
+				}
+
+				// Check confirmation cooldown
+				Long lastPlaced = PLACED_CONFIRMATION_CACHE.get(worldPos.asLong());
+				if (lastPlaced != null && (now - lastPlaced) < CONFIRMATION_COOLDOWN_MS) {
+					continue;
+				}
+
+				BlockState worldState = mc.level.getBlockState(worldPos);
+				WorldBlockValidator.MatchStatus match = WorldBlockValidator.check(worldState, tb.state());
+
+				if (match == WorldBlockValidator.MatchStatus.EXACT_MATCH) {
+					continue; // Already built!
+				}
+
+				// Player collision safety: never place solid blocks inside the player's bounding box
+				AABB blockBox = new AABB(worldPos);
+				if (playerBox.intersects(blockBox)) {
+					continue;
+				}
+
+				if (match == WorldBlockValidator.MatchStatus.MISSING) {
+					candidates.add(new Candidate(worldPos, tb, distSq));
+				}
 			}
 
-			// Check confirmation cooldown
-			Long lastPlaced = PLACED_CONFIRMATION_CACHE.get(worldPos.asLong());
-			if (lastPlaced != null && (now - lastPlaced) < CONFIRMATION_COOLDOWN_MS) {
-				continue;
+			reachableMissingCount = candidates.size();
+			if (candidates.isEmpty()) {
+				lastStatusMessage = "In Reach: 100% Done";
+				currentMissingItem = null;
+				return;
 			}
 
-			BlockState worldState = mc.level.getBlockState(worldPos);
-			WorldBlockValidator.MatchStatus match = WorldBlockValidator.check(worldState, tb.state());
-
-			if (match == WorldBlockValidator.MatchStatus.EXACT_MATCH) {
-				continue; // Already built!
-			}
-
-			// Player collision safety: never place solid blocks inside the player's bounding box
-			AABB blockBox = new AABB(worldPos);
-			if (playerBox.intersects(blockBox)) {
-				continue;
-			}
-
-			if (match == WorldBlockValidator.MatchStatus.MISSING) {
-				candidates.add(new Candidate(worldPos, tb, distSq));
-			}
+			// Sort candidates:
+			// 1. Y-level ascending (bottom-to-top ground support)
+			// 2. Distance squared to eye position (closest first)
+			candidates.sort((c1, c2) -> {
+				int yComp = Integer.compare(c1.tb().relY(), c2.tb().relY());
+				if (yComp != 0) return yComp;
+				return Double.compare(c1.distanceSq(), c2.distanceSq());
+			});
 		}
-
-		reachableMissingCount = candidates.size();
-		if (candidates.isEmpty()) {
-			lastStatusMessage = "In Reach: 100% Done";
-			currentMissingItem = null;
-			return;
-		}
-
-		// Sort candidates:
-		// 1. Y-level ascending (bottom-to-top ground support)
-		// 2. Distance squared to eye position (closest first)
-		candidates.sort((c1, c2) -> {
-			int yComp = Integer.compare(c1.tb().relY(), c2.tb().relY());
-			if (yComp != 0) return yComp;
-			return Double.compare(c1.distanceSq(), c2.distanceSq());
-		});
 
 		int maxBlocksThisTick = config.getBlocksPerTick();
 		int placedCount = 0;

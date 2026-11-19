@@ -3,7 +3,7 @@
 # Shhh Printer
 
 **An automated schematic block-placement companion mod for [Shhh Builder](https://github.com/RafayShhh/shhh-builder).**  
-*Automate your Minecraft builds with zero packet-transmission botting.*
+*Place schematic blocks right where you point, with fair-play defaults and no aura hacking.*
 
 </div>
 
@@ -11,49 +11,55 @@
 
 ## Overview
 
-Shhh Printer is an automation companion for [Shhh Builder](https://github.com/RafayShhh/shhh-builder). It takes the schematics you have placed in the world and automatically bridges, builds, and manages your inventory to place blocks exactly where they need to go, following the visual guide provided by Shhh Builder.
+Shhh Printer is a client-side building companion for [Shhh Builder](https://github.com/RafayShhh/shhh-builder) on Fabric 26.3. Rather than placing blocks automatically all around the player, Shhh Printer operates primarily in **Point & Place** crosshair mode: it only places the schematic block you are actively pointing at.
+
+It requires no server-side modding and runs with safe, anti-cheat friendly defaults.
 
 ---
 
 ## Features
 
-### Smart Automated Placement
-- **Dynamic Speed Control**: Configure placement speed (1-5 blocks/tick) to match server performance and lag.
-- **Air Placement & Strict Modes**: Choose between fast, unconstrained air placement (for creative/lenient servers) or strict adjacent-block-face placement (for safe/anti-cheat survival servers).
-- **Intelligent Inventory Management**:
-    - **Auto-Switching**: Automatically selects the correct block from your hotbar.
-    - **Inventory Swapping**: Automatically swaps items from your main inventory to your hotbar if needed.
+### Point & Place Targeting (Default)
+- **Aim-Assisted Placement**: The printer inspects the ghost block in your crosshair and places only that block when you are looking at it. If you look away, no blocks are placed.
+- **Fair-Play Default**: Air placement is disabled by default. Blocks require valid adjacent block support, mirroring vanilla placement rules.
+- **Optional Area Mode**: For creative or singleplayer testing, Area 360 mode can be toggled to automatically place all missing blocks within reach.
 
 ### Built-in Configuration Presets (`/shhhprinter preset`)
-Quickly adapt the printer to your current environment:
-- **Creative**: Maximum speed, air placement enabled, no restrictions.
-- **Survival**: Safe speed, strict adjacent placement required, smart inventory management.
-- **Public Server**: Slowed speed, strict adjacent placement, disabled auto-inventory swaps to comply with server anti-cheat.
+Quickly switch between pre-configured operational profiles:
+- **Survival (Default)**: Point & Place targeting, 1 block/tick, 2-tick delay (~10 blocks/sec legit cadence), air placement disabled, strict adjacent support enabled, auto hotbar selection enabled.
+- **Public Server (Safe)**: Point & Place targeting, 1 block/tick, 4-tick delay (~5 blocks/sec anti-cheat cadence), air placement disabled, strict adjacent support enabled, inventory swaps disabled to avoid suspicious packet rates.
+- **Creative (Fast)**: Point & Place targeting, 3 blocks/tick, 0-tick delay, air placement enabled, strict adjacent support disabled.
+
+### Intelligent Inventory Management
+- **Auto-Switching**: Automatically selects the matching block from your hotbar when pointing at a ghost block.
+- **Inventory Swapping**: Automatically moves blocks from main inventory to hotbar when running out.
+- **Auto-Facing Calculation**: Calculates placement vectors for slabs, stairs, logs, and directional blocks based on crosshair hit angle.
 
 ### Client-Side Commands (`/shhhprinter`)
-Control the printer entirely from chat with zero server communication:
+Control all settings directly from chat:
 
 | Command | Description |
 | :--- | :--- |
-| `/shhhprinter toggle` | Toggle automated block placement |
+| `/shhhprinter toggle` | Toggle automated block placement on or off |
 | `/shhhprinter on / off` | Explicitly enable or disable the printer |
-| `/shhhprinter speed <1-5>` | Set placement speed (blocks per tick) |
-| `/shhhprinter delay <0-10>` | Set delay between placements in ticks |
-| `/shhhprinter mode <strict|air>` | Set placement mode (Strict Adjacent / Air) |
-| `/shhhprinter preset <name>` | Apply predefined configuration presets |
-| `/shhhprinter config` | Open graphical settings screen |
-| `/shhhprinter stats` | Display printer status and statistics |
+| `/shhhprinter target <crosshair\|all>` | Switch between Point & Place (crosshair) and Area 360 |
+| `/shhhprinter preset <survival\|public\|creative>` | Apply a pre-configured speed and safety preset |
+| `/shhhprinter speed <1-5>` | Set maximum blocks placed per tick |
+| `/shhhprinter delay <0-10>` | Set delay in ticks between placement actions |
+| `/shhhprinter mode <strict\|air>` | Toggle strict adjacent support requirement vs air placement |
+| `/shhhprinter config` | Open the graphical configuration screen |
+| `/shhhprinter stats` | View current target mode, speed, and placed block count |
 
 ---
 
-## Usage & Keybinds
+## Keybindings
 
-All keybindings can be customized in **Options → Controls → Key Binds → Shhh Printer**:
+Configure keybindings in **Options -> Controls -> Key Binds -> Shhh Printer**:
 
 | Key | Default Action | Description |
 | :---: | :--- | :--- |
-| **P** | Toggle Printer | Toggle automated block placement on/off |
-| **O** | Open Config | Open the simplified printer settings screen |
+| **P** | Toggle Printer | Enable or disable automated block placement |
+| **O** | Open Config | Open the settings screen |
 
 ---
 
@@ -61,13 +67,13 @@ All keybindings can be customized in **Options → Controls → Key Binds → Sh
 
 1. Install **Fabric Loader** (`0.20.1` or newer) for **Minecraft 26.3**.
 2. Install **Fabric API** for 26.3.
-3. Install **[Shhh Builder](https://github.com/RafayShhh/shhh-builder)** (Required dependency).
-4. Download **`shhh-printer-1.0.0.jar`** and place it in your `.minecraft/mods` folder.
-5. Launch Minecraft!
+3. Install **[Shhh Builder](https://github.com/RafayShhh/shhh-builder)** (Required companion mod).
+4. Download **`shhh-printer-1.0.0.jar`** and place it in your `.minecraft/mods` directory.
+5. Launch Minecraft.
 
 ---
 
 ## License & Source
 
-Licensed under the permissive [MIT License](LICENSE).  
+Licensed under the [MIT License](LICENSE).  
 Source code and issue tracker are hosted on [GitHub](https://github.com/rafayshhh/shhh-printer).

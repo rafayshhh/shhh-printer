@@ -60,17 +60,31 @@ public class ShhhPrinterCommand {
 				})
 				.executes(ctx -> executeMode(ctx.getSource(), StringArgumentType.getString(ctx, "placementMode")))));
 
+		// /shhhprinter target <crosshair|all>
+		root.then(ClientCommands.literal("target")
+			.then(ClientCommands.argument("targetMode", StringArgumentType.word())
+				.suggests((ctx, builder) -> {
+					builder.suggest("crosshair");
+					builder.suggest("all");
+					return builder.buildFuture();
+				})
+				.executes(ctx -> executeTarget(ctx.getSource(), StringArgumentType.getString(ctx, "targetMode")))));
+
+		// /shhhprinter stats
+		root.then(ClientCommands.literal("stats")
+			.executes(ctx -> executeStats(ctx.getSource())));
+
 		// /shhhprinter config
 		root.then(ClientCommands.literal("config")
 			.executes(ctx -> executeOpenConfig(ctx.getSource())));
 
-		// /shhhprinter preset <creative|survival|public>
+		// /shhhprinter preset <survival|public|creative>
 		root.then(ClientCommands.literal("preset")
 			.then(ClientCommands.argument("name", StringArgumentType.word())
 				.suggests((ctx, builder) -> {
-					builder.suggest("creative");
 					builder.suggest("survival");
 					builder.suggest("public");
+					builder.suggest("creative");
 					return builder.buildFuture();
 				})
 				.executes(ctx -> executePreset(ctx.getSource(), StringArgumentType.getString(ctx, "name")))));
@@ -81,9 +95,11 @@ public class ShhhPrinterCommand {
 	private static int executeHelp(FabricClientCommandSource source) {
 		source.sendFeedback(Component.literal("=== Shhh Printer Commands ===").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD));
 		source.sendFeedback(Component.literal("/shhhprinter toggle").withStyle(ChatFormatting.YELLOW)
-			.append(Component.literal(" - Toggle automated block placement").withStyle(ChatFormatting.GRAY)));
-		source.sendFeedback(Component.literal("/shhhprinter on | off").withStyle(ChatFormatting.YELLOW)
-			.append(Component.literal(" - Enable or disable printer").withStyle(ChatFormatting.GRAY)));
+			.append(Component.literal(" - Toggle automated block placement [P]").withStyle(ChatFormatting.GRAY)));
+		source.sendFeedback(Component.literal("/shhhprinter target <crosshair|all>").withStyle(ChatFormatting.YELLOW)
+			.append(Component.literal(" - Set Point & Place or Area 360 mode").withStyle(ChatFormatting.GRAY)));
+		source.sendFeedback(Component.literal("/shhhprinter preset <survival|public|creative>").withStyle(ChatFormatting.YELLOW)
+			.append(Component.literal(" - Apply optimized configuration preset").withStyle(ChatFormatting.GRAY)));
 		source.sendFeedback(Component.literal("/shhhprinter speed <1-5>").withStyle(ChatFormatting.YELLOW)
 			.append(Component.literal(" - Set placement speed (blocks per tick)").withStyle(ChatFormatting.GRAY)));
 		source.sendFeedback(Component.literal("/shhhprinter delay <0-10>").withStyle(ChatFormatting.YELLOW)
@@ -91,7 +107,7 @@ public class ShhhPrinterCommand {
 		source.sendFeedback(Component.literal("/shhhprinter mode <strict|air>").withStyle(ChatFormatting.YELLOW)
 			.append(Component.literal(" - Set strict adjacent or air placement").withStyle(ChatFormatting.GRAY)));
 		source.sendFeedback(Component.literal("/shhhprinter config").withStyle(ChatFormatting.YELLOW)
-			.append(Component.literal(" - Open settings screen").withStyle(ChatFormatting.GRAY)));
+			.append(Component.literal(" - Open settings screen [O]").withStyle(ChatFormatting.GRAY)));
 		source.sendFeedback(Component.literal("/shhhprinter stats").withStyle(ChatFormatting.YELLOW)
 			.append(Component.literal(" - Display printer status and statistics").withStyle(ChatFormatting.GRAY)));
 		return 1;
@@ -182,9 +198,40 @@ public class ShhhPrinterCommand {
 		return 1;
 	}
 
+	private static int executeTarget(FabricClientCommandSource source, String targetArg) {
+		ShhhPrinterConfig config = ShhhPrinterConfig.getInstance();
+		String lower = targetArg.toLowerCase(Locale.ROOT);
+
+		if (lower.equals("crosshair") || lower.equals("point")) {
+			config.setTargetMode(ShhhPrinterConfig.TargetMode.CROSSHAIR);
+			config.save();
+			source.sendFeedback(Component.literal("Shhh Printer: Target mode set to Point & Place (Crosshair only, fair play safe).")
+				.withStyle(ChatFormatting.GREEN));
+		} else if (lower.equals("all") || lower.equals("area")) {
+			config.setTargetMode(ShhhPrinterConfig.TargetMode.ALL_IN_REACH);
+			config.save();
+			source.sendFeedback(Component.literal("Shhh Printer: Target mode set to Area 360° (Warning: places all blocks in reach sphere, for singleplayer only).")
+				.withStyle(ChatFormatting.YELLOW));
+		} else {
+			source.sendError(Component.literal("Invalid target mode. Use '/shhhprinter target crosshair' or '/shhhprinter target all'.")
+				.withStyle(ChatFormatting.RED));
+			return 0;
+		}
+		return 1;
+	}
+
 	private static int executePreset(FabricClientCommandSource source, String name) {
-		ShhhPrinterConfig.getInstance().applyPreset(name);
-		source.sendFeedback(Component.literal("Shhh Printer: Applied preset " + name)
+		ShhhPrinterConfig config = ShhhPrinterConfig.getInstance();
+		String lower = name.toLowerCase(Locale.ROOT);
+		config.applyPreset(lower);
+
+		String desc = switch (lower) {
+			case "creative", "fast" -> "Creative (Instant, Air-Place Allowed)";
+			case "public", "safe" -> "Public Server (Anti-Cheat Safe, 5 blk/s)";
+			default -> "Survival (Point & Place, 10 blk/s, Strict Support)";
+		};
+
+		source.sendFeedback(Component.literal("Shhh Printer: Applied preset: " + desc)
 			.withStyle(ChatFormatting.GREEN));
 		return 1;
 	}
@@ -198,7 +245,9 @@ public class ShhhPrinterCommand {
 
 		source.sendFeedback(Component.literal("=== Shhh Printer Status ===").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD));
 		source.sendFeedback(Component.literal("Status: ").withStyle(ChatFormatting.GRAY)
-			.append(Component.literal(enabled ? "ENABLED" : "DISABLED").withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.RED)));
+			.append(Component.literal(enabled ? "ACTIVE" : "PAUSED").withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.RED)));
+		source.sendFeedback(Component.literal("Target Mode: ").withStyle(ChatFormatting.GRAY)
+			.append(Component.literal(config.getTargetMode() == ShhhPrinterConfig.TargetMode.CROSSHAIR ? "Point & Place (Crosshair)" : "Area 360°").withStyle(ChatFormatting.WHITE)));
 		source.sendFeedback(Component.literal("Shhh Builder Placement: ").withStyle(ChatFormatting.GRAY)
 			.append(Component.literal(hasPlacement ? "ACTIVE" : "NONE").withStyle(hasPlacement ? ChatFormatting.GREEN : ChatFormatting.YELLOW)));
 		source.sendFeedback(Component.literal("Total Blocks Placed: ").withStyle(ChatFormatting.GRAY)
@@ -206,9 +255,9 @@ public class ShhhPrinterCommand {
 		source.sendFeedback(Component.literal("Engine State: ").withStyle(ChatFormatting.GRAY)
 			.append(Component.literal(status).withStyle(ChatFormatting.YELLOW)));
 		source.sendFeedback(Component.literal("Speed: ").withStyle(ChatFormatting.GRAY)
-			.append(Component.literal(config.getBlocksPerTick() + " blk/tick").withStyle(ChatFormatting.WHITE)));
-		source.sendFeedback(Component.literal("Mode: ").withStyle(ChatFormatting.GRAY)
-			.append(Component.literal(config.isAirPlacement() ? "Air Place" : "Strict Adjacent").withStyle(ChatFormatting.AQUA)));
+			.append(Component.literal(config.getBlocksPerTick() + " blk/tick (delay " + config.getPlacementDelayTicks() + "t)").withStyle(ChatFormatting.WHITE)));
+		source.sendFeedback(Component.literal("Air Placement: ").withStyle(ChatFormatting.GRAY)
+			.append(Component.literal(config.isAirPlacement() ? "Enabled (Mid-air)" : "Disabled (Strict Support)").withStyle(config.isAirPlacement() ? ChatFormatting.YELLOW : ChatFormatting.GREEN)));
 		return 1;
 	}
 }

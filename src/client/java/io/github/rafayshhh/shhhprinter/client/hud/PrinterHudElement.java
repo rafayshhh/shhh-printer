@@ -64,8 +64,8 @@ public class PrinterHudElement implements HudElement {
 			borderColor = UiStyle.BORDER_WARNING;
 		} else {
 			int placed = PrinterEngine.getTotalBlocksPlaced();
-			int speed = config.getBlocksPerTick();
-			text = "PRINTER: ACTIVE (" + placed + " placed | " + speed + " blk/t)";
+			String modeTag = (config.getTargetMode() == ShhhPrinterConfig.TargetMode.CROSSHAIR) ? "Point & Place" : "Area 360";
+			text = "PRINTER: " + modeTag + " (" + placed + " placed)";
 			textColor = UiStyle.COLOR_ACCENT;
 			borderColor = UiStyle.BORDER_ACCENT;
 		}
