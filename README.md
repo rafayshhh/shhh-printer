@@ -73,6 +73,20 @@ Configure keybindings in **Options -> Controls -> Key Binds -> Shhh Printer**:
 
 ---
 
+## Documentation
+
+Full architectural documentation, audit reports, and user guides are available in the [Documentation](Documentation/) directory:
+- [System Architecture](Documentation/ARCHITECTURE.md)
+- [Audit Report](Documentation/AUDIT.md)
+- [Testing Guide](Documentation/TESTING.md)
+- [Changelog](Documentation/CHANGELOG.md)
+- [UI Style Guide](Documentation/UI_STYLE.md)
+- [CurseForge Metadata](Documentation/CURSEFORGE_METADATA.md)
+- [Modrinth Metadata](Documentation/MODRINTH_METADATA.md)
+- [Socials & Branding](Documentation/SOCIALS_AND_BRANDING.md)
+
+---
+
 ## License & Source
 
 Licensed under the [MIT License](LICENSE).  
