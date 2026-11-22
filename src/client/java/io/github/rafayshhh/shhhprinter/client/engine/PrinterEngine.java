@@ -60,6 +60,11 @@ public class PrinterEngine {
 			return;
 		}
 
+		// Player state safety: pause when dead, spectating, sleeping, eating/using item, or mining
+		if (!mc.player.isAlive() || mc.player.isSpectator() || mc.player.isSleeping() || mc.player.isUsingItem() || mc.gameMode.isDestroying()) {
+			return;
+		}
+
 		ShhhPrinterConfig config = ShhhPrinterConfig.getInstance();
 		if (!config.isEnabled()) {
 			lastStatusMessage = "Disabled";
