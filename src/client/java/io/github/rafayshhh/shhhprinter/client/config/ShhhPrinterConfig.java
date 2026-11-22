@@ -26,11 +26,34 @@ public class ShhhPrinterConfig {
 		ALL_IN_REACH
 	}
 
+	public enum HudPosition {
+		TOP_LEFT("Top-Left"),
+		TOP_RIGHT("Top-Right"),
+		BOTTOM_LEFT("Bottom-Left"),
+		BOTTOM_RIGHT("Bottom-Right");
+
+		private final String displayName;
+
+		HudPosition(String displayName) {
+			this.displayName = displayName;
+		}
+
+		public String getDisplayName() {
+			return displayName;
+		}
+
+		public HudPosition next() {
+			HudPosition[] vals = values();
+			return vals[(this.ordinal() + 1) % vals.length];
+		}
+	}
+
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final ShhhPrinterConfig INSTANCE = new ShhhPrinterConfig();
 
 	private boolean enabled = false;
 	private TargetMode targetMode = TargetMode.CROSSHAIR; // Crosshair Point & Place is fair play default
+	private HudPosition hudPosition = HudPosition.TOP_RIGHT; // Default to Top-Right to prevent overlap with Shhh Builder (Top-Left)
 	private int blocksPerTick = 1; // 1 to 5
 	private int placementDelayTicks = 2; // 0 to 10 (2 ticks = 10 blocks/sec legit cadence)
 	private double reachDistance = 4.5; // 2.0 to 6.0
@@ -117,6 +140,13 @@ public class ShhhPrinterConfig {
 			if (obj.has("inventorySwap")) inventorySwap = obj.get("inventorySwap").getAsBoolean();
 			if (obj.has("autoOrientFacing")) autoOrientFacing = obj.get("autoOrientFacing").getAsBoolean();
 			if (obj.has("hudEnabled")) hudEnabled = obj.get("hudEnabled").getAsBoolean();
+			if (obj.has("hudPosition")) {
+				try {
+					hudPosition = HudPosition.valueOf(obj.get("hudPosition").getAsString().toUpperCase(Locale.ROOT));
+				} catch (Throwable ignored) {
+					hudPosition = HudPosition.TOP_RIGHT;
+				}
+			}
 			if (obj.has("soundEffects")) soundEffects = obj.get("soundEffects").getAsBoolean();
 			if (obj.has("breakWrongBlocks")) breakWrongBlocks = obj.get("breakWrongBlocks").getAsBoolean();
 		} catch (Throwable t) {
@@ -141,6 +171,7 @@ public class ShhhPrinterConfig {
 		obj.addProperty("inventorySwap", inventorySwap);
 		obj.addProperty("autoOrientFacing", autoOrientFacing);
 		obj.addProperty("hudEnabled", hudEnabled);
+		obj.addProperty("hudPosition", (hudPosition != null ? hudPosition : HudPosition.TOP_RIGHT).name());
 		obj.addProperty("soundEffects", soundEffects);
 		obj.addProperty("breakWrongBlocks", breakWrongBlocks);
 
@@ -201,6 +232,9 @@ public class ShhhPrinterConfig {
 
 	public boolean isHudEnabled() { return hudEnabled; }
 	public void setHudEnabled(boolean hudEnabled) { this.hudEnabled = hudEnabled; }
+
+	public HudPosition getHudPosition() { return hudPosition != null ? hudPosition : HudPosition.TOP_RIGHT; }
+	public void setHudPosition(HudPosition hudPosition) { this.hudPosition = (hudPosition != null) ? hudPosition : HudPosition.TOP_RIGHT; }
 
 	public boolean isSoundEffects() { return soundEffects; }
 	public void setSoundEffects(boolean soundEffects) { this.soundEffects = soundEffects; }

@@ -160,6 +160,10 @@ public class PrinterEngine {
 				int relZ = targetPos.getZ() - origin.getZ();
 
 				PlacementManager.TransformedBlock tb = PlacementManager.getBlockAt(relX, relY, relZ);
+				if (tb == null) {
+					PlacementManager.getCachedBlocks(data);
+					tb = PlacementManager.getBlockAt(relX, relY, relZ);
+				}
 				if (tb != null && tb.state() != null && !tb.state().isAir()) {
 					boolean layerAllowed = true;
 					if (layerMode == LayerMode.SINGLE && tb.relY() != (currentLayer - 1)) {
@@ -282,17 +286,18 @@ public class PrinterEngine {
 						int currentSlot = inv.getSelectedSlot();
 						inv.setItem(currentSlot, stack);
 						mc.gameMode.handleCreativeModeItemAdd(stack, currentSlot + 36);
+						selectHotbarSlot(mc, currentSlot);
 					}
-				} else if (config.isAutoSwitchHotbar() && inv.getSelectedSlot() != hotbarSlot) {
-					inv.setSelectedSlot(hotbarSlot);
+				} else if (config.isAutoSwitchHotbar()) {
+					selectHotbarSlot(mc, hotbarSlot);
 				}
 			} else {
 				Inventory inv = mc.player.getInventory();
 				int hotbarSlot = findInHotbar(inv, itemIds);
 
 				if (hotbarSlot != -1) {
-					if (config.isAutoSwitchHotbar() && inv.getSelectedSlot() != hotbarSlot) {
-						inv.setSelectedSlot(hotbarSlot);
+					if (config.isAutoSwitchHotbar()) {
+						selectHotbarSlot(mc, hotbarSlot);
 					}
 				} else {
 					int mainInvSlot = findInMainInventory(inv, itemIds);
@@ -305,6 +310,7 @@ public class PrinterEngine {
 							ContainerInput.SWAP,
 							mc.player
 						);
+						selectHotbarSlot(mc, currentSlot);
 					} else {
 						// Item not in inventory, skip block
 						currentMissingItem = expectedState.getBlock().getName().getString();
@@ -375,7 +381,7 @@ public class PrinterEngine {
 			BlockPos neighborPos = targetPos.relative(dir);
 			BlockState neighborState = mc.level.getBlockState(neighborPos);
 
-			if (neighborState != null && !neighborState.isAir() && neighborState.isSolid()) {
+			if (neighborState != null && !neighborState.isAir() && !neighborState.canBeReplaced()) {
 				// The face of the neighbor touching targetPos
 				Direction clickedFace = dir.getOpposite();
 
@@ -433,14 +439,27 @@ public class PrinterEngine {
 
 		if (facing != null && facing.getAxis().isHorizontal()) {
 			float targetYaw = facing.toYRot();
-			// Send rotation packet so server sees orientation without jarring camera snap
-			if (mc.getConnection() != null) {
+			// Only send rotation packet if player look yaw differs significantly to avoid rate-limiting
+			if (Math.abs(mc.player.getYRot() - targetYaw) > 1.0f && mc.getConnection() != null) {
 				mc.getConnection().send(new ServerboundMovePlayerPacket.Rot(
 					targetYaw,
 					mc.player.getXRot(),
 					mc.player.onGround(),
 					false
 				));
+			}
+		}
+	}
+
+	private static void selectHotbarSlot(Minecraft mc, int slot) {
+		if (mc == null || mc.player == null) {
+			return;
+		}
+		Inventory inv = mc.player.getInventory();
+		if (inv.getSelectedSlot() != slot) {
+			inv.setSelectedSlot(slot);
+			if (mc.getConnection() != null) {
+				mc.getConnection().send(new ServerboundSetCarriedItemPacket(slot));
 			}
 		}
 	}

@@ -258,6 +258,8 @@ public class ShhhPrinterCommand {
 			.append(Component.literal(config.getBlocksPerTick() + " blk/tick (delay " + config.getPlacementDelayTicks() + "t)").withStyle(ChatFormatting.WHITE)));
 		source.sendFeedback(Component.literal("Air Placement: ").withStyle(ChatFormatting.GRAY)
 			.append(Component.literal(config.isAirPlacement() ? "Enabled (Mid-air)" : "Disabled (Strict Support)").withStyle(config.isAirPlacement() ? ChatFormatting.YELLOW : ChatFormatting.GREEN)));
+		source.sendFeedback(Component.literal("HUD Position: ").withStyle(ChatFormatting.GRAY)
+			.append(Component.literal(config.getHudPosition().getDisplayName()).withStyle(ChatFormatting.WHITE)));
 		return 1;
 	}
 }

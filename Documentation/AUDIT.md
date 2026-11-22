@@ -42,6 +42,7 @@ In accordance with strict audit requirements, every statement, finding, and mech
   - `blocksPerTick`: `1` (1 block per placement action).
   - `placementDelayTicks`: `2` (2 ticks delay = ~10 blocks/sec cadence).
   - `reachDistance`: `4.5` (within standard vanilla survival reach).
+  - `hudPosition`: `TOP_RIGHT` (prevents overlap with Shhh Builder at Top-Left).
   - `autoSwitchHotbar`: `true`.
   - `inventorySwap`: `true`.
   - `autoOrientFacing`: `true`.
@@ -86,7 +87,7 @@ In accordance with strict audit requirements, every statement, finding, and mech
 ### Area D: Physical Placement & Anti-Cheat Safety
 - **Strict Neighbor Adjacency (`resolvePlacementHit`)**:
   - Searches 6 adjacent neighbor positions in priority order: `DOWN` (floor support), `NORTH`, `SOUTH`, `WEST`, `EAST`, `UP`.
-  - Verifies `neighborState != null && !neighborState.isAir() && neighborState.isSolid()`.
+  - Verifies `neighborState != null && !neighborState.isAir() && !neighborState.canBeReplaced()`.
   - Computes the clicked face (`dir.getOpposite()`) and accurate face center coordinates `(hx, hy, hz)`. `[VERIFIED BY UNIT TEST]` in `PlacementHitVectorTest.java`.
 - **Slab & Stair Precision**:
   - Slabs: Adjusts hit vector height for `SlabType.TOP` (`hy = neighborPos.getY() + 0.8`) and `SlabType.BOTTOM` (`hy = neighborPos.getY() + 0.2`).

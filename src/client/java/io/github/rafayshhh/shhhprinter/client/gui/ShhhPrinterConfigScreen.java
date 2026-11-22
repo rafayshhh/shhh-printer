@@ -25,6 +25,7 @@ public class ShhhPrinterConfigScreen extends Screen {
 	private UiStyle.StyledButton autoHotbarButton;
 	private UiStyle.StyledButton inventorySwapButton;
 	private UiStyle.StyledButton hudToggleButton;
+	private UiStyle.StyledButton hudPositionButton;
 	private UiStyle.StyledButton presetSurvivalButton;
 	private UiStyle.StyledButton presetPublicButton;
 	private UiStyle.StyledButton presetCreativeButton;
@@ -179,7 +180,7 @@ public class ShhhPrinterConfigScreen extends Screen {
 		);
 		this.addRenderableWidget(inventorySwapButton);
 
-		// Row 6: Status HUD & Reset Stats
+		// Row 6: Status HUD & Position
 		hudToggleButton = new UiStyle.StyledButton(
 			leftX, startY + 140, btnW, btnH,
 			getHudText(),
@@ -191,17 +192,16 @@ public class ShhhPrinterConfigScreen extends Screen {
 		);
 		this.addRenderableWidget(hudToggleButton);
 
-		UiStyle.StyledButton clearStatsButton = new UiStyle.StyledButton(
+		hudPositionButton = new UiStyle.StyledButton(
 			rightX, startY + 140, btnW, btnH,
-			Component.literal("Clear Placed Counter"),
+			getHudPosText(),
 			btn -> {
-				PrinterEngine.resetStats();
-				if (this.minecraft != null && this.minecraft.player != null) {
-					this.minecraft.player.sendOverlayMessage(Component.literal("Placed blocks counter reset to 0"));
-				}
+				config.setHudPosition(config.getHudPosition().next());
+				config.save();
+				btn.setMessage(getHudPosText());
 			}
 		);
-		this.addRenderableWidget(clearStatsButton);
+		this.addRenderableWidget(hudPositionButton);
 
 		// Row 7: Reset Defaults & Done
 		int bottomY = startY + 172;
@@ -212,6 +212,7 @@ public class ShhhPrinterConfigScreen extends Screen {
 				config.applyPreset("survival");
 				config.setEnabled(false);
 				config.save();
+				PrinterEngine.resetStats();
 				refreshButtonLabels();
 			}
 		);
@@ -258,6 +259,7 @@ public class ShhhPrinterConfigScreen extends Screen {
 		autoHotbarButton.setMessage(getHotbarText());
 		inventorySwapButton.setMessage(getInventorySwapText());
 		hudToggleButton.setMessage(getHudText());
+		hudPositionButton.setMessage(getHudPosText());
 	}
 
 	private Component getMasterToggleText() {
@@ -301,6 +303,10 @@ public class ShhhPrinterConfigScreen extends Screen {
 
 	private Component getHudText() {
 		return Component.literal("Status HUD: " + (config.isHudEnabled() ? "SHOWN" : "HIDDEN"));
+	}
+
+	private Component getHudPosText() {
+		return Component.literal("HUD Pos: " + config.getHudPosition().getDisplayName());
 	}
 
 	@Override

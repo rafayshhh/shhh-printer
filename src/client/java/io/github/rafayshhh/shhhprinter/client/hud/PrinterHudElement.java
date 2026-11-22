@@ -76,8 +76,35 @@ public class PrinterHudElement implements HudElement {
 		int boxWidth = textWidth + (paddingX * 2);
 		int boxHeight = font.lineHeight + (paddingY * 2);
 
-		int x = 8;
-		int y = 8;
+		int screenWidth = mc.getWindow().getGuiScaledWidth();
+		int screenHeight = mc.getWindow().getGuiScaledHeight();
+		int margin = 8;
+
+		int x;
+		int y;
+
+		switch (config.getHudPosition()) {
+			case TOP_LEFT -> {
+				x = margin;
+				y = margin;
+			}
+			case BOTTOM_LEFT -> {
+				x = margin;
+				y = screenHeight - boxHeight - margin;
+			}
+			case BOTTOM_RIGHT -> {
+				x = screenWidth - boxWidth - margin;
+				y = screenHeight - boxHeight - margin;
+			}
+			case TOP_RIGHT -> {
+				x = screenWidth - boxWidth - margin;
+				y = margin;
+			}
+			default -> {
+				x = screenWidth - boxWidth - margin;
+				y = margin;
+			}
+		}
 
 		// Draw card background
 		extractor.fill(x, y, x + boxWidth, y + boxHeight, UiStyle.BG_PANEL);

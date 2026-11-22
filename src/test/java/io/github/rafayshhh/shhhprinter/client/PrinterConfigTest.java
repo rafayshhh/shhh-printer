@@ -23,6 +23,7 @@ public class PrinterConfigTest {
 		assertFalse(config.isAirPlacement());
 		assertTrue(config.isAutoSwitchHotbar());
 		assertTrue(config.isInventorySwap());
+		assertEquals(ShhhPrinterConfig.HudPosition.TOP_RIGHT, config.getHudPosition());
 
 		// Test clamping
 		config.setBlocksPerTick(100);
@@ -74,6 +75,7 @@ public class PrinterConfigTest {
 		assertTrue(config.isStrictAdjacent());
 		assertTrue(config.isAutoSwitchHotbar());
 		assertTrue(config.isInventorySwap());
+		assertEquals(ShhhPrinterConfig.HudPosition.TOP_RIGHT, config.getHudPosition());
 
 		// Public Server Preset (Safe)
 		config.applyPreset("public");
@@ -94,5 +96,21 @@ public class PrinterConfigTest {
 		assertFalse(config.isStrictAdjacent());
 		assertTrue(config.isAutoSwitchHotbar());
 		assertTrue(config.isInventorySwap());
+		assertEquals(ShhhPrinterConfig.HudPosition.TOP_RIGHT, config.getHudPosition());
+	}
+
+	@Test
+	void testHudPositionCycling() {
+		ShhhPrinterConfig config = ShhhPrinterConfig.getInstance();
+		config.setHudPosition(ShhhPrinterConfig.HudPosition.TOP_LEFT);
+		assertEquals(ShhhPrinterConfig.HudPosition.TOP_LEFT, config.getHudPosition());
+		assertEquals("Top-Left", config.getHudPosition().getDisplayName());
+
+		assertEquals(ShhhPrinterConfig.HudPosition.TOP_RIGHT, config.getHudPosition().next());
+		assertEquals(ShhhPrinterConfig.HudPosition.BOTTOM_LEFT, ShhhPrinterConfig.HudPosition.TOP_RIGHT.next());
+		assertEquals(ShhhPrinterConfig.HudPosition.BOTTOM_RIGHT, ShhhPrinterConfig.HudPosition.BOTTOM_LEFT.next());
+		assertEquals(ShhhPrinterConfig.HudPosition.TOP_LEFT, ShhhPrinterConfig.HudPosition.BOTTOM_RIGHT.next());
+
+		config.setHudPosition(ShhhPrinterConfig.HudPosition.TOP_RIGHT);
 	}
 }
